@@ -1,13 +1,11 @@
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import Axios from "axios";
 import formatDistance from "date-fns/formatDistanceToNow";
 
 import desktopImg from "./assets/hero-image-github-profile.jpg";
-import phoneImg from "./assets/hero-image-github-profile-sm.jpg";
 import searchIcon from "./assets/Search.svg";
 import forkIcon from "./assets/Nesting.svg";
 import starIcon from "./assets/Star.svg";
-import chieldIcon from "./assets/Chield_alt.svg";
 
 const Page = () => {
   const [username, setUsername] = useState("");
@@ -19,14 +17,27 @@ const Page = () => {
   const [users, setUsers] = useState([]);
   const [searchSuggests, setSearchSuggests] = useState([]);
 
-  const URL = `https://api.github.com/users`;
+  const URL = "https://api.github.com/users";
   const URL1 = `https://api.github.com/users/${selected}`;
   const [reposURL, setReposURL] = useState("");
 
   const fetchUsers = async () => {
+    let allUsers = [];
+    let page = 1;
+
     try {
-      const res = await Axios.get(URL);
-      setUsers(res.data);
+      while (true) {
+        const res = await Axios.get(`${URL}?per_page=100&page=${page}`, {
+          headers: {
+            Authorization: `token ${process.env.REACT_APP_GITHUB_TOKEN}`,
+          },
+        });
+        if (allUsers.length === 100) break;
+        if (res.data.length === 0) break;
+        allUsers = [...allUsers, ...res.data];
+        page++;
+      }
+      setUsers(allUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
     }
@@ -51,15 +62,21 @@ const Page = () => {
   };
 
   useEffect(() => {
-    if (username.length > 0) {
-      fetchUsers();
-      setSearchSuggests(users.filter((user) => user.login.includes(username)));
-    }
-    if (selected !== "") {
-      fetchUser();
-      fetchrepos();
-    }
-    console.log(user);
+    const fetchAndFilterUsers = async () => {
+      if (username.length > 0) {
+        await fetchUsers();
+        setSearchSuggests(
+          users.filter((user) => user.login.includes(username))
+        );
+      }
+      if (selected !== "") {
+        fetchUser();
+        fetchrepos();
+      }
+    };
+
+    fetchAndFilterUsers();
+    console.log(users);
   }, [username, selected]);
 
   const handleSearch = (e) => {
@@ -70,14 +87,14 @@ const Page = () => {
   };
 
   return (
-    <div className="relative w-screen text-[#CDD5E0]">
+    <div className="relative max-w-screen text-[#CDD5E0]">
       <img
         src={desktopImg}
         alt="Cover-image"
         className="w-full h-[15rem] object-cover"
       />
       <div className="absolute top-0 left-[50%] transform -translate-x-[50%] w-[80%] h-full flex flex-col">
-        <div className="bg-[#364153] absolute z-20 w-[90%] sm:w-[60%] md:w-[80%] h-auto top-12 left-[50%] transform -translate-x-[50%] rounded-2xl py-2">
+        <div className="bg-[#364153] shadow-md absolute z-20 w-[90%] sm:w-[60%] md:w-[80%] h-auto top-12 left-[50%] transform -translate-x-[50%] rounded-2xl py-2">
           <form
             onSubmit={handleSearch}
             className="w-full h-16 flex justify-center items-center"
@@ -95,15 +112,15 @@ const Page = () => {
                 setUsername(e.target.value);
               }}
               placeholder="Enter username"
-              className="w-[90%] h-full bg-transparent focus:outline-none"
+              className="w-[90%] border-black bg-transparent focus:outline-none"
             />
           </form>
 
           {/* Search suggestion */}
           <div
             className={
-              username.length > 1
-                ? "bg-[#364153] w-auto h-auto flex justify-center items-center flex-col mx-4 pt-4"
+              username.length > 0 && searchSuggests.length > 0
+                ? "bg-[#364153] overflow-auto w-auto max-h-[600px] flex flex-col content-start mx-4 shadow-md"
                 : "hidden"
             }
           >
@@ -114,12 +131,13 @@ const Page = () => {
                   setSelected(suggests.login);
                   setReposURL(suggests.repos_url);
                   setUsername("");
+                  setFetch(true);
                 }}
                 className="w-full h-auto border-t border-[#97a3b6] flex justify-start items-center gap-2 py-2 px-2 cursor-pointer hover:scale-95 transition duration-300"
               >
                 <img
                   src={suggests.avatar_url}
-                  alt="image"
+                  alt="Profile-picture"
                   className="w-12 h-w-12 rounded-full"
                 />
                 <div className="border-l font-semibold px-2">
