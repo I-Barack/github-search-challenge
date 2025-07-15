@@ -120,7 +120,7 @@ const Page = () => {
           <div
             className={
               username.length > 0 && searchSuggests.length > 0
-                ? "bg-[#364153] overflow-auto w-auto max-h-[600px] flex flex-col content-start mx-4 shadow-md"
+                ? "bg-[#364153] overflow-auto w-auto max-h-[600px] flex flex-col content-start mx-4"
                 : "hidden"
             }
           >
